@@ -25,4 +25,7 @@ model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 # 프롬프트템플릿-모델-Output Parser를 체인으로 연결
 chain = prompt | model | output_parser
-chain.invoke({"subject": "SF영화 3개 추천해줘"})
+
+response = chain.invoke({"subject": "SF영화 3개 추천해줘"})
+
+print(response)
