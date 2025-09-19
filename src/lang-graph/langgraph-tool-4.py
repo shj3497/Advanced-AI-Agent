@@ -7,10 +7,13 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph
 
+from langgraph.checkpoint.memory import MemorySaver
+
 
 load_dotenv()
 
 llm = ChatOpenAI(model="gpt-4o-mini")
+memory = MemorySaver()
 
 
 class State(TypedDict):
@@ -38,12 +41,22 @@ graph_builder.add_edge('tools', 'chatbot')
 graph_builder.add_conditional_edges('chatbot', tools_condition)
 
 graph_builder.set_entry_point('chatbot')
-graph = graph_builder.compile()
+graph = graph_builder.compile(checkpointer=memory)
 
-response = graph.invoke(
-    {"messages": [{"role": "user", "content": "지금 한국 대통령은 누구야?"}]})
+config = {"configurable": {"thread_id": "1"}}
 
-# response = graph.invoke(
-#     {"messages": [{"role": "user", "content": "마이크로소프트가 어떤 회사야?"}]})
+while True:
+    user_input = input("User : ")
+    if (user_input.lower() in ['quit', 'exit', 'q']):
+        print("Goodbye!")
+        break
 
-print(response)
+    for event in graph.stream({"messages": ("user", user_input)}, config):
+        for value in event.values():
+            print('Assistant : ', value['messages'][-1].content)
+
+#! 기억할 메세지 개수 제한하기
+
+
+def filter_messages(messages: list):
+    return messages[-2:]
